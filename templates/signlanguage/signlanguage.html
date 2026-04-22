@@ -1,0 +1,183 @@
+{% extends 'base.html' %}
+{% block title %}Sign Language — ElderCare AI{% endblock %}
+{% block nav_sl %}active{% endblock %}
+{% block extra_css %}
+<style>
+.sl-layout{display:grid;grid-template-columns:1fr 380px;gap:0;min-height:calc(100vh - 70px);}
+.sl-main{background:#0f172a;padding:2rem;display:flex;flex-direction:column;gap:1.4rem;}
+.sl-panel{background:#f0f7ff;padding:2rem;overflow-y:auto;}
+.cam-wrap{position:relative;background:#060d1e;border-radius:18px;overflow:hidden;aspect-ratio:4/3;}
+#slVid{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
+#slAnn{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:2;display:none;}
+.overlay{position:absolute;inset:0;z-index:3;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(15,23,42,.7);gap:1rem;}
+.mode-tabs{display:flex;background:rgba(255,255,255,.1);border-radius:11px;padding:4px;gap:4px;}
+.m-tab{flex:1;padding:7px;border:none;background:transparent;border-radius:8px;font-family:'Outfit',sans-serif;font-weight:600;font-size:.83rem;color:#93c5fd;cursor:pointer;transition:all .2s;}
+.m-tab.active{background:var(--blue);color:#fff;}
+.res-card{background:#fff;border-radius:15px;padding:1.3rem;margin-bottom:.9rem;border:1px solid var(--border);}
+.res-card h4{font-family:'Outfit',sans-serif;font-weight:700;font-size:.76rem;color:var(--blue);text-transform:uppercase;letter-spacing:.5px;margin-bottom:.4rem;}
+.res-card p{font-size:.88rem;color:#374151;line-height:1.6;margin:0;}
+.conf-badge{display:inline-block;padding:2px 9px;border-radius:50px;font-size:.73rem;font-family:'Outfit',sans-serif;font-weight:700;text-transform:uppercase;}
+.conf-high{background:#d1fae5;color:#065f46;}.conf-medium{background:#fef3c7;color:#92400e;}.conf-low{background:#fee2e2;color:#991b1b;}
+.sign-guide{background:rgba(255,255,255,.05);border-radius:11px;padding:.9rem;}
+.s-item{display:flex;align-items:center;gap:9px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:.8rem;color:#93c5fd;}
+.s-item:last-child{border-bottom:none;}.s-em{font-size:1.4rem;width:34px;text-align:center;flex-shrink:0;}
+.upload-zone{border:2px dashed #93c5fd;border-radius:15px;padding:1.8rem;text-align:center;cursor:pointer;transition:all .2s;background:rgba(29,78,216,.05);}
+.upload-zone:hover{border-color:var(--blue-light);background:rgba(29,78,216,.1);}
+.toggle-wrap{position:relative;width:44px;height:24px;cursor:pointer;display:inline-block;}
+.toggle-wrap input{opacity:0;width:0;height:0;}
+#tSlider{position:absolute;inset:0;background:#e2e8f0;border-radius:50px;transition:all .3s;}
+#tKnob{position:absolute;width:18px;height:18px;background:#fff;border-radius:50%;top:3px;left:3px;transition:all .3s;box-shadow:0 2px 4px rgba(0,0,0,.2);}
+@media(max-width:992px){.sl-layout{grid-template-columns:1fr;}}
+</style>
+{% endblock %}
+{% block content %}
+<div class="sl-layout">
+    <div class="sl-main">
+        <div>
+            <h1 style="font-family:'Outfit',sans-serif;font-weight:800;color:#fff;font-size:1.35rem;margin-bottom:.2rem;">🤟 Sign Language Interpreter</h1>
+            <p style="color:#94a3b8;font-size:.86rem;">Show a hand gesture — AI interprets it in a medical context</p>
+        </div>
+        <div class="mode-tabs">
+            <button class="m-tab active" id="tabLive" onclick="setMode('live')">📷 Live Camera</button>
+            <button class="m-tab" id="tabUp" onclick="setMode('upload')">📁 Upload Image</button>
+        </div>
+        <div id="liveMode" style="display:flex;flex-direction:column;gap:1rem;">
+            <div class="cam-wrap">
+                <video id="slVid" autoplay muted playsinline></video>
+                <img id="slAnn">
+                <div class="overlay" id="slOverlay">
+                    <div style="font-size:3.5rem;">🤟</div>
+                    <div style="font-family:'Outfit',sans-serif;font-weight:700;color:#fff;">Sign Language Mode</div>
+                    <p style="color:#93c5fd;font-size:.83rem;text-align:center;max-width:250px;">Position your hands and perform a medical sign gesture</p>
+                </div>
+            </div>
+            <div style="display:flex;gap:9px;">
+                <button onclick="startSL()" id="slStart" style="flex:1;padding:.7rem;background:var(--blue);color:#fff;border:none;border-radius:11px;font-family:'Outfit',sans-serif;font-weight:700;cursor:pointer;"><i class="bi bi-camera-video-fill me-2"></i>Start Camera</button>
+                <button onclick="captureSign()" id="slCapture" style="flex:1;padding:.7rem;background:#0d9488;color:#fff;border:none;border-radius:11px;font-family:'Outfit',sans-serif;font-weight:700;cursor:pointer;display:none;"><i class="bi bi-hand-index-thumb me-2"></i>Analyse Sign</button>
+                <button onclick="stopSL()" id="slStop" style="padding:.7rem 1rem;background:#ef4444;color:#fff;border:none;border-radius:11px;font-family:'Outfit',sans-serif;font-weight:700;cursor:pointer;display:none;"><i class="bi bi-stop-fill"></i></button>
+            </div>
+        </div>
+        <div id="uploadMode" style="display:none;">
+            <div class="upload-zone" onclick="document.getElementById('signImg').click()">
+                <div style="font-size:2.5rem;margin-bottom:.65rem;">📁</div>
+                <p style="font-family:'Outfit',sans-serif;font-weight:700;color:#93c5fd;margin-bottom:.2rem;">Upload Sign Language Image</p>
+                <p style="font-size:.8rem;color:#64748b;margin:0;">Click to upload a hand gesture photo</p>
+            </div>
+            <input type="file" id="signImg" accept="image/*" style="display:none;" onchange="analyseUploaded(this)">
+        </div>
+        <div class="sign-guide">
+            <p style="font-family:'Outfit',sans-serif;font-weight:700;color:#93c5fd;font-size:.76rem;text-transform:uppercase;letter-spacing:1px;margin-bottom:.65rem;"><i class="bi bi-book me-1"></i>Common Medical Signs</p>
+            <div class="s-item"><span class="s-em">✋</span>Open palm = Stop / No</div>
+            <div class="s-item"><span class="s-em">👍</span>Thumbs up = Yes / Good / Feeling better</div>
+            <div class="s-item"><span class="s-em">👎</span>Thumbs down = No / Bad / Pain</div>
+            <div class="s-item"><span class="s-em">🤏</span>Pinched fingers on chest = Chest pain</div>
+            <div class="s-item"><span class="s-em">🤜</span>Fist on head = Headache</div>
+            <div class="s-item"><span class="s-em">🖐️</span>Hand on stomach = Stomach pain</div>
+            <div class="s-item"><span class="s-em">🆘</span>Both hands waving = Emergency</div>
+        </div>
+    </div>
+    <aside class="sl-panel">
+        <h2 style="font-family:'Outfit',sans-serif;font-weight:800;font-size:1.05rem;color:var(--dark);margin-bottom:1.4rem;"><i class="bi bi-translate text-blue me-2"></i>Interpretation</h2>
+        <div id="slResults">
+            <div style="text-align:center;padding:3rem 1rem;color:#94a3b8;">
+                <div style="font-size:3.5rem;margin-bottom:.9rem;">🤟</div>
+                <h3 style="font-family:'Outfit',sans-serif;color:#cbd5e1;font-size:.95rem;">No sign detected yet</h3>
+                <p style="font-size:.83rem;">Start camera and show a hand gesture, or upload an image.</p>
+            </div>
+        </div>
+        <div id="slStatus" style="background:#eff6ff;border-radius:11px;padding:.9rem;margin-top:1rem;display:none;"><div style="font-size:.8rem;color:#1e40af;" id="slStatusTxt"></div></div>
+        <div style="margin-top:1.4rem;background:#fff;border-radius:11px;padding:1rem;border:1px solid var(--border);">
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+                <div><div style="font-family:'Outfit',sans-serif;font-weight:700;font-size:.88rem;color:var(--dark);">Auto-Analyse</div><div style="font-size:.76rem;color:var(--muted);">Analyse every 3 seconds</div></div>
+                <label class="toggle-wrap"><input type="checkbox" id="autoTog" onchange="toggleAuto()"><span id="tSlider"></span><span id="tKnob"></span></label>
+            </div>
+        </div>
+    </aside>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+const ANA_URL="{% url 'signlanguage:analyze_sign' %}";
+const UP_URL="{% url 'signlanguage:analyze_uploaded' %}";
+const CSRF="{{ csrf_token }}";
+let slStream=null,autoInt=null,mode='live',analysing=false;
+
+function setMode(m){
+    mode=m;
+    document.getElementById('liveMode').style.display=m==='live'?'flex':'none';
+    document.getElementById('uploadMode').style.display=m==='upload'?'block':'none';
+    document.getElementById('tabLive').classList.toggle('active',m==='live');
+    document.getElementById('tabUp').classList.toggle('active',m==='upload');
+    if(m==='upload'&&slStream)stopSL();
+}
+async function startSL(){
+    try{
+        slStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:640,height:480},audio:false});
+        document.getElementById('slVid').srcObject=slStream;
+        document.getElementById('slOverlay').style.display='none';
+        document.getElementById('slStart').style.display='none';
+        document.getElementById('slCapture').style.display='block';
+        document.getElementById('slStop').style.display='block';
+    }catch(e){showToast('Camera access denied','error');}
+}
+function stopSL(){
+    if(slStream){slStream.getTracks().forEach(t=>t.stop());slStream=null;}
+    clearInterval(autoInt);
+    document.getElementById('slVid').srcObject=null;
+    document.getElementById('slAnn').style.display='none';
+    document.getElementById('slOverlay').style.display='flex';
+    document.getElementById('slStart').style.display='block';
+    document.getElementById('slCapture').style.display='none';
+    document.getElementById('slStop').style.display='none';
+    document.getElementById('autoTog').checked=false;updateToggle(false);
+}
+async function captureSign(){
+    if(analysing)return;
+    const v=document.getElementById('slVid');if(!v.videoWidth){showToast('Camera not ready','warning');return;}
+    const c=document.createElement('canvas');c.width=v.videoWidth;c.height=v.videoHeight;c.getContext('2d').drawImage(v,0,0);
+    analysing=true;showSt('Analysing gesture…',true);
+    try{
+        const r=await fetch(ANA_URL,{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},body:JSON.stringify({frame:c.toDataURL('image/jpeg',.8)})});
+        const d=await r.json();
+        if(d.success){showResults(d);if(d.annotated_frame){const af=document.getElementById('slAnn');af.src=d.annotated_frame;af.style.display='block';}}
+        else showToast(d.error||'Analysis failed','error');
+    }catch(e){showToast('Network error','error');}
+    analysing=false;hideSt();
+}
+async function analyseUploaded(inp){
+    if(!inp.files[0])return;
+    const fd=new FormData();fd.append('image',inp.files[0]);fd.append('csrfmiddlewaretoken',CSRF);
+    showSt('Analysing image…',true);
+    try{const r=await fetch(UP_URL,{method:'POST',body:fd});const d=await r.json();if(d.success)showResults(d);else showToast(d.error||'Failed','error');}
+    catch(e){showToast('Network error','error');}
+    hideSt();
+}
+function showResults(data){
+    const gd=data.gesture_data;
+    if(!gd){document.getElementById('slResults').innerHTML=`<div class="res-card" style="border:1px solid #fecaca;background:#fef2f2;"><h4 style="color:#ef4444;">No gesture detected</h4><p>Try better lighting or hold your hand more clearly.</p></div>`;return;}
+    const cc={high:'conf-high',medium:'conf-medium',low:'conf-low'}[gd.confidence]||'conf-medium';
+    const hs=data.hand_detected?'✅ Hand detected':'⚠️ No hand detected';
+    let signs='';
+    if(gd.common_medical_signs?.length)signs=`<div class="res-card"><h4>🤟 Related Signs</h4><div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:3px;">${gd.common_medical_signs.map(s=>`<span style="background:#eff6ff;color:#1e40af;padding:2px 9px;border-radius:50px;font-size:.76rem;font-family:'Outfit',sans-serif;font-weight:600;">${s}</span>`).join('')}</div></div>`;
+    document.getElementById('slResults').innerHTML=`
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.9rem;">
+            <span style="font-size:.8rem;color:var(--muted);">${hs}</span>
+            <span class="conf-badge ${cc}">Conf: ${gd.confidence||'medium'}</span>
+        </div>
+        <div class="res-card" style="background:linear-gradient(135deg,#eff6ff,#dbeafe);border:1px solid #bfdbfe;">
+            <h4>👁️ Gesture Detected</h4><p style="font-weight:600;color:var(--dark);">${gd.gesture_detected||'Hand gesture'}</p>
+        </div>
+        <div class="res-card"><h4>🏥 Medical Interpretation</h4><p>${gd.medical_interpretation||'No interpretation.'}</p></div>
+        <div class="res-card" style="background:#f0fdf4;border:1px solid #bbf7d0;"><h4 style="color:#065f46;">💬 Medical Response</h4><p style="color:#065f46;">${gd.response||'Consult a healthcare professional.'}</p></div>
+        ${signs}`;
+}
+function toggleAuto(){
+    const on=document.getElementById('autoTog').checked;updateToggle(on);
+    if(on){if(!slStream){showToast('Start camera first','warning');document.getElementById('autoTog').checked=false;updateToggle(false);return;}autoInt=setInterval(captureSign,3000);showToast('Auto-analyse enabled','info');}
+    else clearInterval(autoInt);
+}
+function updateToggle(a){document.getElementById('tSlider').style.background=a?'var(--blue)':'#e2e8f0';document.getElementById('tKnob').style.left=a?'23px':'3px';}
+function showSt(t,l){const el=document.getElementById('slStatus');el.style.display='block';document.getElementById('slStatusTxt').textContent=(l?'⏳ ':'')+t;}
+function hideSt(){document.getElementById('slStatus').style.display='none';}
+</script>
+{% endblock %}

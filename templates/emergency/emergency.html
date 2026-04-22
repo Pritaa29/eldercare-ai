@@ -1,0 +1,199 @@
+{% extends 'base.html' %}
+{% block title %}Emergency SOS — ElderCare AI{% endblock %}
+{% block extra_css %}
+<style>
+.em-layout{display:grid;grid-template-columns:1fr 380px;gap:0;min-height:calc(100vh - 70px);}
+.em-main{padding:2.5rem;background:#f0f7ff;}
+.em-panel{background:#fff;border-left:1px solid var(--border);padding:2rem;overflow-y:auto;}
+.sos-ring{width:210px;height:210px;margin:0 auto 2rem;position:relative;cursor:pointer;}
+.sos-outer{position:absolute;inset:-11px;border:3px solid rgba(239,68,68,.3);border-radius:50%;animation:rp 2s ease-in-out infinite;}
+.sos-mid{position:absolute;inset:-5px;border:2px solid rgba(239,68,68,.2);border-radius:50%;animation:rp 2s ease-in-out infinite .3s;}
+@keyframes rp{0%,100%{transform:scale(1);opacity:.5;}50%{transform:scale(1.08);opacity:1;}}
+.sos-btn{width:210px;height:210px;background:linear-gradient(135deg,#ef4444,#dc2626);border:none;border-radius:50%;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;
+    transition:all .2s;box-shadow:0 8px 30px rgba(239,68,68,.4);position:relative;z-index:2;}
+.sos-btn:hover{transform:scale(1.05);box-shadow:0 12px 40px rgba(239,68,68,.5);}
+.sos-btn:active{transform:scale(.96);}
+.sos-btn.sent{background:linear-gradient(135deg,#10b981,#059669);box-shadow:0 8px 30px rgba(16,185,129,.4);}
+.sos-icon{font-size:3.2rem;}.sos-label{font-family:'Outfit',sans-serif;font-weight:800;font-size:1.3rem;color:#fff;letter-spacing:2px;margin-top:.4rem;}
+.sos-sub{font-size:.73rem;color:rgba(255,255,255,.8);margin-top:.2rem;}
+.contact-card{background:#f8faff;border-radius:13px;border:1px solid var(--border);padding:.9rem 1.1rem;
+    margin-bottom:.65rem;display:flex;align-items:center;gap:11px;transition:all .2s;}
+.c-avatar{width:42px;height:42px;border-radius:11px;background:linear-gradient(135deg,var(--blue),var(--blue-light));
+    display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;}
+.c-name{font-family:'Outfit',sans-serif;font-weight:700;font-size:.92rem;color:var(--dark);}
+.c-rel{font-size:.76rem;color:var(--muted);}
+.ch-badge{padding:2px 7px;border-radius:50px;font-size:.68rem;font-weight:700;}
+.ch-email{background:#dbeafe;color:#1e40af;}.ch-tg{background:#e0f2fe;color:#0369a1;}
+.btn-del-c{margin-left:auto;background:none;border:none;color:#ef4444;cursor:pointer;padding:4px 7px;border-radius:6px;flex-shrink:0;}
+.btn-del-c:hover{background:#fee2e2;}
+.add-form input{width:100%;border:2px solid var(--border);border-radius:10px;padding:.57rem .88rem;font-size:.86rem;margin-bottom:.65rem;font-family:'DM Sans',sans-serif;transition:border-color .2s;}
+.add-form input:focus{border-color:var(--blue);outline:none;}
+.alert-res{background:#fff;border-radius:15px;padding:1.4rem;border:2px solid;text-align:center;margin-top:1.4rem;display:none;}
+.alert-res.success{border-color:#10b981;background:#f0fdf4;}.alert-res.error{border-color:#ef4444;background:#fef2f2;}
+.alert-log{font-size:.8rem;color:var(--muted);padding:7px 0;border-bottom:1px solid #eff6ff;}
+.alert-log:last-child{border-bottom:none;}
+.tg-tip{background:#fef3c7;border-radius:9px;padding:.65rem;margin-bottom:.9rem;border:1px solid #fde68a;font-size:.76rem;color:#92400e;}
+@media(max-width:900px){.em-layout{grid-template-columns:1fr;}.em-panel{border-left:none;border-top:1px solid var(--border);}}
+</style>
+{% endblock %}
+{% block content %}
+<div class="em-layout">
+    <div class="em-main">
+        <div class="text-center mb-4">
+            <h1 style="font-family:'Outfit',sans-serif;font-weight:800;font-size:1.75rem;color:var(--dark);">🚨 Emergency SOS</h1>
+            <p style="color:var(--muted);">Hold the button to instantly alert all your emergency contacts</p>
+        </div>
+        <div style="max-width:380px;margin:0 auto 1.4rem;">
+            <label style="font-family:'Outfit',sans-serif;font-weight:600;font-size:.83rem;color:#374151;display:block;margin-bottom:.35rem;">Your Name</label>
+            <input type="text" id="patName" value="Patient" style="width:100%;border:2px solid var(--border);border-radius:10px;padding:.57rem .88rem;font-size:.92rem;font-family:'DM Sans',sans-serif;">
+        </div>
+        <div style="text-align:center;">
+            <div class="sos-ring" onmousedown="startHold(event)" ontouchstart="startHold(event)">
+                <div class="sos-outer"></div><div class="sos-mid"></div>
+                <button class="sos-btn" id="sosBtn">
+                    <span class="sos-icon">🆘</span>
+                    <span class="sos-label">SOS</span>
+                    <span class="sos-sub">Hold 2 seconds</span>
+                </button>
+            </div>
+            <p style="color:#94a3b8;font-size:.83rem;">Hold for 2 seconds to confirm emergency</p>
+        </div>
+        <div style="max-width:480px;margin:1.4rem auto;">
+            <label style="font-family:'Outfit',sans-serif;font-weight:600;font-size:.83rem;color:#374151;display:block;margin-bottom:.35rem;">Custom message (optional)</label>
+            <textarea id="custMsg" rows="2" placeholder="e.g., I fell down. I'm in the bedroom." style="width:100%;border:2px solid var(--border);border-radius:10px;padding:.57rem .88rem;font-family:'DM Sans',sans-serif;resize:none;font-size:.88rem;"></textarea>
+        </div>
+        <div class="alert-res" id="alertRes" style="max-width:480px;margin:0 auto;">
+            <div id="arIcon" style="font-size:2.8rem;margin-bottom:.65rem;"></div>
+            <h3 id="arTitle" style="font-family:'Outfit',sans-serif;font-weight:800;margin-bottom:.4rem;"></h3>
+            <p id="arMsg" style="font-size:.88rem;margin:0;"></p>
+        </div>
+        {% if recent_alerts %}
+        <div style="max-width:480px;margin:2rem auto 0;background:#fff;border-radius:15px;padding:1.1rem;border:1px solid var(--border);">
+            <div style="font-family:'Outfit',sans-serif;font-weight:700;font-size:.83rem;color:#374151;margin-bottom:.65rem;"><i class="bi bi-clock-history me-2"></i>Recent Alerts</div>
+            {% for a in recent_alerts %}
+            <div class="alert-log">
+                <span style="color:{% if a.status == 'sent' %}#10b981{% else %}#ef4444{% endif %};font-weight:600;">{% if a.status == 'sent' %}✓{% else %}✗{% endif %}</span>
+                {{ a.created_at|date:"d M Y H:i" }} — {{ a.contacts_notified }} contact(s) notified
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+    <aside class="em-panel">
+        <h2 style="font-family:'Outfit',sans-serif;font-weight:800;font-size:1.05rem;color:var(--dark);margin-bottom:1.4rem;"><i class="bi bi-people-fill text-blue me-2"></i>Emergency Contacts</h2>
+        <div id="contactList">
+            {% if not contacts %}
+            <div style="text-align:center;padding:2rem;color:#94a3b8;"><div style="font-size:2.2rem;margin-bottom:.4rem;">👨‍👩‍👧</div><p style="font-size:.83rem;">No contacts added yet.</p></div>
+            {% endif %}
+            {% for c in contacts %}
+            <div class="contact-card" id="contact-{{ c.id }}">
+                <div class="c-avatar">👤</div>
+                <div style="flex:1;">
+                    <div class="c-name">{{ c.name }}</div>
+                    <div class="c-rel">{{ c.relationship }}</div>
+                    <div style="display:flex;gap:5px;margin-top:3px;">
+                        {% if c.email %}<span class="ch-badge ch-email">✉ Email</span>{% endif %}
+                        {% if c.telegram_chat_id %}<span class="ch-badge ch-tg">✈ Telegram</span>{% endif %}
+                    </div>
+                </div>
+                <button class="btn-del-c" onclick="delContact({{ c.id }})"><i class="bi bi-trash"></i></button>
+            </div>
+            {% endfor %}
+        </div>
+        <hr class="my-3">
+        <div style="font-family:'Outfit',sans-serif;font-weight:700;font-size:.88rem;color:#374151;margin-bottom:.9rem;"><i class="bi bi-person-plus-fill text-blue me-2"></i>Add Contact</div>
+        <div class="add-form">
+            <input type="text" id="cName" placeholder="Full Name *">
+            <input type="text" id="cRel" placeholder="Relationship (e.g. Daughter, Son)">
+            <input type="email" id="cEmail" placeholder="Email address (for email alerts)">
+            <input type="text" id="cTg" placeholder="Telegram Chat ID (for instant alerts)">
+            <input type="tel" id="cPhone" placeholder="Phone number (optional)">
+            <div class="tg-tip"><strong>How to get Telegram Chat ID:</strong><br>1. Search <strong>@userinfobot</strong> on Telegram<br>2. Send /start — it shows your Chat ID<br>3. Enter that number above</div>
+            <button onclick="addContact()" class="btn-blue w-100"><i class="bi bi-person-plus me-2"></i>Add Contact</button>
+        </div>
+    </aside>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+const SOS_URL="{% url 'emergency:trigger_sos' %}";
+const ADD_URL="{% url 'emergency:add_contact' %}";
+const CSRF="{{ csrf_token }}";
+let timer=null,holding=false;
+
+document.addEventListener('mouseup',cancelHold);
+document.addEventListener('touchend',cancelHold);
+
+function startHold(e){
+    e.preventDefault();if(holding)return;holding=true;
+    document.getElementById('sosBtn').querySelector('.sos-sub').textContent='Hold… 2s';
+    timer=setTimeout(triggerSOS,2000);
+}
+function cancelHold(){
+    if(timer){clearTimeout(timer);timer=null;}
+    if(holding){holding=false;document.getElementById('sosBtn').querySelector('.sos-sub').textContent='Hold 2 seconds';}
+}
+
+async function triggerSOS(){
+    holding=false;
+    const btn=document.getElementById('sosBtn');
+    btn.querySelector('.sos-sub').textContent='Sending…';btn.style.cursor='not-allowed';
+    let lat=null,lng=null,address='Location not available';
+    try{
+        const pos=await new Promise((res,rej)=>navigator.geolocation.getCurrentPosition(res,rej,{timeout:5000}));
+        lat=pos.coords.latitude;lng=pos.coords.longitude;address=`Lat: ${lat.toFixed(5)}, Lng: ${lng.toFixed(5)}`;
+    }catch(e){}
+    try{
+        const r=await fetch(SOS_URL,{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},
+            body:JSON.stringify({patient_name:document.getElementById('patName').value||'Patient',latitude:lat,longitude:lng,address,message:document.getElementById('custMsg').value})});
+        const d=await r.json();
+        const res=document.getElementById('alertRes');res.style.display='block';
+        if(d.success){
+            btn.classList.add('sent');btn.querySelector('.sos-icon').textContent='✅';btn.querySelector('.sos-label').textContent='SENT';btn.querySelector('.sos-sub').textContent=`${d.notified} contact(s) notified`;
+            res.className='alert-res success';document.getElementById('arIcon').textContent='✅';
+            document.getElementById('arTitle').textContent='Alert Sent!';document.getElementById('arMsg').textContent=d.message;document.getElementById('arMsg').style.color='#065f46';
+            showToast(`🚨 SOS sent to ${d.notified} contact(s)!`,'success');
+            setTimeout(()=>{btn.classList.remove('sent');btn.querySelector('.sos-icon').textContent='🆘';btn.querySelector('.sos-label').textContent='SOS';btn.querySelector('.sos-sub').textContent='Hold 2 seconds';btn.style.cursor='pointer';},5000);
+        }else{
+            btn.querySelector('.sos-sub').textContent='Failed — Try again';btn.style.cursor='pointer';
+            res.className='alert-res error';document.getElementById('arIcon').textContent='❌';
+            document.getElementById('arTitle').textContent='Alert Failed';document.getElementById('arMsg').textContent=d.error||'Call 999 directly!';document.getElementById('arMsg').style.color='#991b1b';
+            showToast('Alert failed. Call 999!','error');
+        }
+    }catch(e){showToast('Network error. Call 999!','error');btn.querySelector('.sos-sub').textContent='Network error';btn.style.cursor='pointer';}
+}
+
+async function addContact(){
+    const name=document.getElementById('cName').value.trim();
+    if(!name){showToast('Please enter the contact name','warning');return;}
+    const email=document.getElementById('cEmail').value.trim();
+    const tg=document.getElementById('cTg').value.trim();
+    if(!email&&!tg){showToast('Enter at least an email or Telegram ID','warning');return;}
+    const payload={name,relationship:document.getElementById('cRel').value||'Family Member',email,telegram_chat_id:tg,phone:document.getElementById('cPhone').value};
+    try{
+        const r=await fetch(ADD_URL,{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},body:JSON.stringify(payload)});
+        const d=await r.json();
+        if(d.success){
+            renderContact(d.contact,email,tg);
+            ['cName','cRel','cEmail','cTg','cPhone'].forEach(id=>document.getElementById(id).value='');
+            showToast(`${d.contact.name} added ✅`,'success');
+        }else showToast(d.error||'Failed','error');
+    }catch(e){showToast('Network error','error');}
+}
+function renderContact(c,email,tg){
+    document.querySelector('#contactList > div:not([id])')?.remove();
+    const d=document.createElement('div');d.className='contact-card';d.id=`contact-${c.id}`;
+    d.innerHTML=`<div class="c-avatar">👤</div>
+        <div style="flex:1;"><div class="c-name">${c.name}</div><div class="c-rel">${c.relationship}</div>
+        <div style="display:flex;gap:5px;margin-top:3px;">${email?'<span class="ch-badge ch-email">✉ Email</span>':''}${tg?'<span class="ch-badge ch-tg">✈ Telegram</span>':''}</div></div>
+        <button class="btn-del-c" onclick="delContact(${c.id})"><i class="bi bi-trash"></i></button>`;
+    document.getElementById('contactList').appendChild(d);
+}
+async function delContact(id){
+    if(!confirm('Remove this contact?'))return;
+    const r=await fetch(`/emergency/contact/delete/${id}/`,{method:'DELETE',headers:{'X-CSRFToken':CSRF}});
+    const d=await r.json();if(d.success){document.getElementById(`contact-${id}`)?.remove();showToast('Contact removed','info');}
+}
+</script>
+{% endblock %}

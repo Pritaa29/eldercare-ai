@@ -1,0 +1,12 @@
+.cache/
+.codeoss/
+.docker/
+.npm/
+.rustup/
+.gemini/
+__pycache__/
+*.zip
+*.pyc
+.env
+db.sqlite3
+venv/

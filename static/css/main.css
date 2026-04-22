@@ -1,0 +1,136 @@
+/* CHAT UI */
+.chat-container {
+    width: 60%;
+    margin: 40px auto;
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+}
+
+.chat-box {
+    height: 300px;
+    overflow-y: auto;
+    margin-bottom: 10px;
+}
+
+/* messages */
+.message {
+    padding: 10px;
+    margin: 5px;
+    border-radius: 8px;
+}
+
+.user {
+    background: #d1e7ff;
+    text-align: right;
+}
+
+.bot {
+    background: #eee;
+}
+
+/* input */
+.input-area {
+    display: flex;
+    gap: 10px;
+}
+
+.upload-btn {
+    cursor: pointer;
+}
+
+.upload-btn input {
+    display: none;
+}
+
+/* preview */
+.preview {
+    width: 100px;
+    margin-bottom: 10px;
+}
+
+
+
+
+/* ElderCare AI — Global Stylesheet Supplement */
+/* Primary styles are in base.html <style> blocks for self-contained templates */
+
+/* ── Accessibility: larger tap targets for elderly ── */
+button, .btn, a.nav-link {
+    min-height: 40px;
+}
+
+/* ── Smooth scrolling ── */
+html {
+    scroll-behavior: smooth;
+}
+
+/* ── Focus styles for keyboard navigation ── */
+:focus-visible {
+    outline: 3px solid #7c3aed;
+    outline-offset: 3px;
+    border-radius: 6px;
+}
+
+/* ── Selection colour ── */
+::selection {
+    background: #ede9fe;
+    color: #5b21b6;
+}
+
+/* ── Scrollbar styling ── */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+::-webkit-scrollbar-track { background: #f1f1f1; }
+::-webkit-scrollbar-thumb { background: #c4b5fd; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #7c3aed; }
+
+/* ── Loading spinner ── */
+.spinner {
+    width: 24px;
+    height: 24px;
+    border: 3px solid #ede9fe;
+    border-top-color: #7c3aed;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    display: inline-block;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ── Fade-in animation for page content ── */
+.fade-in {
+    animation: fadeIn 0.5s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── High contrast mode support for elderly ── */
+@media (prefers-contrast: high) {
+    :root {
+        --purple: #5b21b6;
+        --border: #9ca3af;
+    }
+    .nav-link { font-weight: 700; }
+}
+
+/* ── Reduced motion for those who prefer it ── */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* ── Print styles ── */
+@media print {
+    .navbar, footer, .btn { display: none !important; }
+    body { padding-top: 0 !important; }
+}

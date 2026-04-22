@@ -1,0 +1,219 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}ElderCare AI — Home is Clinic, Clinic is Home{% endblock %}
+{% block nav_home %}active{% endblock %}
+{% block extra_css %}
+<style>
+.hero{min-height:calc(100vh - 70px);display:grid;grid-template-columns:1fr 1fr;overflow:hidden;}
+.hero-left{padding:5rem 4rem 5rem 5rem;display:flex;flex-direction:column;justify-content:center;
+    background:#fff;position:relative;}
+.hero-left::before{content:'';position:absolute;width:350px;height:350px;background:#dbeafe;
+    border-radius:50%;top:-100px;left:-100px;z-index:0;}
+.hero-left>*{position:relative;z-index:1;}
+.hero-tag{display:inline-flex;align-items:center;gap:8px;color:var(--blue);
+    font-family:'Outfit',sans-serif;font-weight:600;font-size:.9rem;letter-spacing:.5px;margin-bottom:1.5rem;}
+.hero-tag::before{content:'';width:32px;height:2px;background:var(--blue);border-radius:2px;}
+.hero-h1{font-family:'Outfit',sans-serif;font-weight:800;font-size:clamp(2.1rem,4vw,3.1rem);
+    line-height:1.1;letter-spacing:-1.5px;color:var(--dark);margin-bottom:.4rem;}
+.hero-h1 .accent{color:var(--blue);display:block;}
+.hero-desc{color:var(--muted);font-size:1.05rem;line-height:1.7;max-width:460px;margin-top:1rem;margin-bottom:2rem;}
+.hero-actions{display:flex;gap:12px;flex-wrap:wrap;}
+.btn-hero{background:var(--blue);color:#fff;border:none;border-radius:12px;padding:.85rem 1.8rem;
+    font-family:'Outfit',sans-serif;font-weight:700;font-size:1rem;text-decoration:none;
+    display:inline-flex;align-items:center;gap:8px;transition:all .25s;}
+.btn-hero:hover{background:var(--blue-dark);color:#fff;transform:translateY(-2px);
+    box-shadow:0 8px 24px rgba(29,78,216,.35);}
+.btn-hero-outline{background:#fff;color:var(--dark);border:2px solid var(--border);border-radius:12px;
+    padding:.8rem 1.6rem;font-family:'Outfit',sans-serif;font-weight:600;font-size:1rem;
+    text-decoration:none;display:inline-flex;align-items:center;gap:8px;transition:all .25s;}
+.btn-hero-outline:hover{border-color:var(--blue);color:var(--blue);transform:translateY(-2px);}
+.hero-right{position:relative;overflow:hidden;background:linear-gradient(135deg,var(--dark) 0%,#1e3a8a 100%);}
+.hero-img-bg{position:absolute;inset:0;background:url('https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=800&q=80') center/cover;opacity:.3;}
+.hero-right-content{position:relative;z-index:2;height:100%;display:flex;flex-direction:column;justify-content:flex-end;padding:3rem;}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(29,78,216,.85);color:#fff;
+    padding:.5rem 1rem;border-radius:50px;font-family:'Outfit',sans-serif;font-weight:600;font-size:.85rem;
+    width:fit-content;margin-bottom:1rem;backdrop-filter:blur(10px);}
+.hero-right h2{font-family:'Outfit',sans-serif;font-weight:800;font-size:2rem;color:#fff;line-height:1.2;}
+.hero-right p{color:#93c5fd;margin-top:.5rem;font-size:.95rem;}
+.features-strip{background:var(--dark);padding:1.5rem 0;}
+.f-pill{display:flex;align-items:center;gap:10px;color:#93c5fd;font-family:'Outfit',sans-serif;font-size:.9rem;font-weight:500;}
+.f-pill i{color:var(--blue-accent);font-size:1.1rem;}
+.section-label{font-family:'Outfit',sans-serif;font-size:.8rem;font-weight:700;letter-spacing:2px;
+    text-transform:uppercase;color:var(--blue);margin-bottom:.5rem;}
+.section-title{font-family:'Outfit',sans-serif;font-weight:800;font-size:clamp(1.8rem,3vw,2.4rem);
+    letter-spacing:-1px;color:var(--dark);line-height:1.2;}
+.svc-card{background:#fff;border-radius:20px;padding:2rem 1.75rem;border:1px solid #e0eaff;
+    transition:all .3s;height:100%;text-decoration:none;display:block;position:relative;overflow:hidden;}
+.svc-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;
+    background:var(--card-c,var(--blue));transform:scaleX(0);transition:transform .3s;}
+.svc-card:hover{transform:translateY(-6px);box-shadow:0 16px 40px rgba(29,78,216,.12);
+    border-color:#bfdbfe;text-decoration:none;}
+.svc-card:hover::after{transform:scaleX(1);}
+.svc-icon{width:60px;height:60px;border-radius:16px;display:flex;align-items:center;
+    justify-content:center;font-size:1.6rem;margin-bottom:1.2rem;}
+.svc-card h3{font-family:'Outfit',sans-serif;font-weight:700;font-size:1.15rem;color:var(--dark);margin-bottom:.5rem;}
+.svc-card p{color:var(--muted);font-size:.9rem;line-height:1.6;margin:0;}
+.card-arrow{font-size:1.2rem;color:var(--blue);margin-top:1rem;transition:transform .2s;display:block;}
+.svc-card:hover .card-arrow{transform:translateX(4px);}
+.stats-section{background:linear-gradient(135deg,var(--dark) 0%,#1e3a8a 100%);padding:4rem 0;position:relative;overflow:hidden;}
+.stats-section::before{content:'';position:absolute;width:500px;height:500px;background:var(--blue);
+    border-radius:50%;opacity:.06;top:-200px;right:-200px;}
+.stat-num{font-family:'Outfit',sans-serif;font-weight:800;font-size:2.8rem;color:#fff;letter-spacing:-1px;line-height:1;}
+.stat-unit{color:var(--blue-accent);}
+.stat-lbl{color:#94a3b8;font-size:.9rem;margin-top:.3rem;}
+.cta-box{background:#fff;border-radius:24px;padding:3rem;border:2px solid #dbeafe;position:relative;overflow:hidden;}
+.cta-box::before{content:'🏥';position:absolute;font-size:10rem;right:-1rem;top:50%;
+    transform:translateY(-50%);opacity:.05;}
+@media(max-width:992px){.hero{grid-template-columns:1fr;min-height:auto;}
+    .hero-left{padding:3rem 2rem;}.hero-right{height:300px;}}
+@media(max-width:576px){.hero-left{padding:2.5rem 1.5rem;}
+    .hero-actions{flex-direction:column;}.btn-hero,.btn-hero-outline{justify-content:center;}}
+</style>
+{% endblock %}
+{% block content %}
+
+<!-- HERO -->
+<section class="hero">
+    <div class="hero-left">
+        <div class="hero-tag">ElderCare AI — Digital Healthcare</div>
+        <h1 class="hero-h1">
+            Home is Clinic,<br>Clinic is Home
+            <span class="accent">Care Anywhere</span>
+        </h1>
+        <p class="hero-desc">We empower elderly Malaysians with full control of their own health — AI medical advice, medicine reminders, exercise guidance, and instant emergency alerts.</p>
+        <div class="hero-actions">
+            <a href="{% url 'chatbot:chatbot' %}" class="btn-hero"><i class="bi bi-robot"></i>Talk to AI Doctor</a>
+            <a href="#services" class="btn-hero-outline"><i class="bi bi-grid-3x3-gap"></i>Explore Features</a>
+        </div>
+        <div class="d-flex gap-3 mt-4 flex-wrap">
+            <div class="d-flex align-items-center gap-2"><i class="bi bi-shield-check" style="color:#10b981;font-size:1.1rem;"></i><small style="color:var(--muted);font-weight:500;">Gemini AI Powered</small></div>
+            <div class="d-flex align-items-center gap-2"><i class="bi bi-lock-fill" style="color:var(--blue);font-size:1.1rem;"></i><small style="color:var(--muted);font-weight:500;">Private & Secure</small></div>
+            <div class="d-flex align-items-center gap-2"><i class="bi bi-heart-fill" style="color:#ef4444;font-size:1.1rem;"></i><small style="color:var(--muted);font-weight:500;">Built for Elderly</small></div>
+        </div>
+    </div>
+    <div class="hero-right">
+        <div class="hero-img-bg"></div>
+        <div class="hero-right-content">
+            <div class="hero-badge"><i class="bi bi-stars"></i>AI-Powered Health Platform</div>
+            <h2>Redefining Healthcare<br>for Elderly Malaysians</h2>
+            <p>Aligned with Malaysia's NIMP 2030 — Track 3: Vital Signs</p>
+        </div>
+    </div>
+</section>
+
+<!-- STRIP -->
+<div class="features-strip">
+    <div class="container">
+        <div class="d-flex justify-content-center gap-4 flex-wrap py-1">
+            <div class="f-pill"><i class="bi bi-robot"></i>AI Doctor Chatbot</div>
+            <div class="f-pill"><i class="bi bi-capsule"></i>Medicine Reminders</div>
+            <div class="f-pill"><i class="bi bi-camera-video"></i>Posture Analysis</div>
+            <div class="f-pill"><i class="bi bi-hand-index-thumb"></i>Sign Language</div>
+            <div class="f-pill"><i class="bi bi-geo-alt"></i>Nearby Care</div>
+            <div class="f-pill"><i class="bi bi-exclamation-octagon"></i>Emergency SOS</div>
+        </div>
+    </div>
+</div>
+
+<!-- SERVICES -->
+<section id="services" class="py-5 mt-4">
+    <div class="container">
+        <div class="text-center mb-5">
+            <div class="section-label">Our Features</div>
+            <h2 class="section-title">Everything You Need,<br>All in One Place</h2>
+        </div>
+        <div class="row g-4">
+            <div class="col-md-6 col-lg-4">
+                <a href="{% url 'chatbot:chatbot' %}" class="svc-card" style="--card-c:#1d4ed8;">
+                    <div class="svc-icon" style="background:#dbeafe;">🤖</div>
+                    <h3>AI Doctor Chatbot</h3>
+                    <p>Describe symptoms via text, image, or file. Get instant risk assessment, diagnosis hints, and personalised advice.</p>
+                    <i class="card-arrow bi bi-arrow-right-circle-fill"></i>
+                </a>
+            </div>
+            <div class="col-md-6 col-lg-4">
+                <a href="{% url 'medicine:medicine' %}" class="svc-card" style="--card-c:#0d9488;">
+                    <div class="svc-icon" style="background:#ccfbf1;">💊</div>
+                    <h3>Medicine Tracker</h3>
+                    <p>Set up medications and times. Receive browser notifications and sound alerts when it's time to take them.</p>
+                    <i class="card-arrow bi bi-arrow-right-circle-fill"></i>
+                </a>
+            </div>
+            <div class="col-md-6 col-lg-4">
+                <a href="{% url 'exercise:exercise' %}" class="svc-card" style="--card-c:#f59e0b;">
+                    <div class="svc-icon" style="background:#fef3c7;">🏋️</div>
+                    <h3>Exercise Monitor</h3>
+                    <p>Real-time computer vision analyses your posture during exercise and gives live feedback to keep you safe.</p>
+                    <i class="card-arrow bi bi-arrow-right-circle-fill"></i>
+                </a>
+            </div>
+            <div class="col-md-6 col-lg-4">
+                <a href="{% url 'signlanguage:signlanguage' %}" class="svc-card" style="--card-c:#ec4899;">
+                    <div class="svc-icon" style="background:#fce7f3;">🤟</div>
+                    <h3>Sign Language</h3>
+                    <p>Show a sign or gesture on camera. Our AI interprets it in a medical context and provides appropriate advice.</p>
+                    <i class="card-arrow bi bi-arrow-right-circle-fill"></i>
+                </a>
+            </div>
+            <div class="col-md-6 col-lg-4">
+                <a href="{% url 'carecentre:carecentre' %}" class="svc-card" style="--card-c:#3b82f6;">
+                    <div class="svc-icon" style="background:#dbeafe;">🏥</div>
+                    <h3>Care Centre</h3>
+                    <p>Find hospitals, clinics, and pharmacies near you instantly with ratings, hours, and Google Maps directions.</p>
+                    <i class="card-arrow bi bi-arrow-right-circle-fill"></i>
+                </a>
+            </div>
+            <div class="col-md-6 col-lg-4">
+                <a href="{% url 'emergency:emergency' %}" class="svc-card" style="--card-c:#ef4444;">
+                    <div class="svc-icon" style="background:#fee2e2;">🚨</div>
+                    <h3>Emergency SOS</h3>
+                    <p>One press sends your location to family via email and Telegram instantly. Never be alone in a crisis.</p>
+                    <i class="card-arrow bi bi-arrow-right-circle-fill"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA -->
+<section class="py-5">
+    <div class="container">
+        <div class="cta-box">
+            <div class="row align-items-center">
+                <div class="col-lg-8">
+                    <div class="section-label mb-2">AI Medical Assistant</div>
+                    <h2 class="section-title mb-3">Not Feeling Well?<br>Talk to Dr. Aida</h2>
+                    <p class="text-muted mb-4" style="font-size:1.05rem;max-width:500px;">Our AI doctor analyses your symptoms, gives risk levels, possible conditions, and personalised advice — 24/7, in English or Malay.</p>
+                    <a href="{% url 'chatbot:chatbot' %}" class="btn-hero" style="width:fit-content;"><i class="bi bi-chat-heart-fill"></i>Start Consultation</a>
+                </div>
+                <div class="col-lg-4 mt-4 mt-lg-0 d-flex flex-column gap-3">
+                    <div class="d-flex align-items-center gap-3 p-3 rounded-xl" style="background:#f0fdf4;border:1px solid #bbf7d0;">
+                        <span style="font-size:1.5rem;">🟢</span>
+                        <div><div style="font-family:'Outfit',sans-serif;font-weight:700;font-size:.85rem;">LOW RISK</div><div style="font-size:.8rem;color:var(--muted);">Rest & stay hydrated</div></div>
+                    </div>
+                    <div class="d-flex align-items-center gap-3 p-3 rounded-xl" style="background:#fff7ed;border:1px solid #fed7aa;">
+                        <span style="font-size:1.5rem;">🟠</span>
+                        <div><div style="font-family:'Outfit',sans-serif;font-weight:700;font-size:.85rem;">HIGH RISK</div><div style="font-size:.8rem;color:var(--muted);">See a doctor today</div></div>
+                    </div>
+                    <div class="d-flex align-items-center gap-3 p-3 rounded-xl" style="background:#fef2f2;border:1px solid #fecaca;">
+                        <span style="font-size:1.5rem;">🔴</span>
+                        <div><div style="font-family:'Outfit',sans-serif;font-weight:700;font-size:.85rem;">CRITICAL</div><div style="font-size:.8rem;color:var(--muted);">Call 999 immediately</div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- STATS -->
+<section class="stats-section">
+    <div class="container">
+        <div class="row g-4 text-center">
+            <div class="col-6 col-md-3"><div class="stat-num">24<span class="stat-unit">/7</span></div><div class="stat-lbl">AI Available</div></div>
+            <div class="col-6 col-md-3"><div class="stat-num">6<span class="stat-unit">+</span></div><div class="stat-lbl">Health Features</div></div>
+            <div class="col-6 col-md-3"><div class="stat-num">5<span class="stat-unit">s</span></div><div class="stat-lbl">SOS Response</div></div>
+            <div class="col-6 col-md-3"><div class="stat-num">100<span class="stat-unit">%</span></div><div class="stat-lbl">Private & Secure</div></div>
+        </div>
+    </div>
+</section>
+{% endblock %}

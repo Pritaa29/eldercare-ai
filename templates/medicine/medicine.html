@@ -1,0 +1,233 @@
+{% extends 'base.html' %}
+{% block title %}Medicine Tracker — ElderCare AI{% endblock %}
+{% block nav_med %}active{% endblock %}
+{% block extra_css %}
+<style>
+.med-layout{display:grid;grid-template-columns:360px 1fr;gap:0;min-height:calc(100vh - 70px);}
+.med-panel{background:#fff;border-right:1px solid var(--border);padding:2rem;overflow-y:auto;}
+.med-main{padding:2rem;background:#f0f7ff;overflow-y:auto;}
+.panel-title{font-family:'Outfit',sans-serif;font-weight:800;font-size:1.1rem;color:var(--dark);margin-bottom:1.4rem;}
+.flabel{font-family:'Outfit',sans-serif;font-weight:600;font-size:.84rem;color:#374151;margin-bottom:.35rem;display:block;}
+.finput{border:2px solid var(--border);border-radius:10px;font-size:.88rem;padding:.58rem .88rem;
+    transition:border-color .2s;width:100%;font-family:'DM Sans',sans-serif;}
+.finput:focus{border-color:var(--blue);outline:none;box-shadow:none;}
+.form-g{margin-bottom:1rem;}
+.times-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:7px;}
+.t-input{display:flex;align-items:center;gap:7px;}
+.t-input input{width:100%;}
+.btn-add-t{background:#eff6ff;border:1px dashed #93c5fd;border-radius:10px;padding:7px;
+    font-size:.81rem;color:var(--blue);cursor:pointer;width:100%;font-family:'Outfit',sans-serif;font-weight:600;
+    transition:all .2s;margin-top:7px;display:flex;align-items:center;justify-content:center;gap:5px;}
+.btn-add-t:hover{background:#dbeafe;}
+.med-card{background:#fff;border-radius:15px;border:1px solid var(--border);padding:1.2rem 1.4rem;
+    margin-bottom:.9rem;transition:all .2s;position:relative;overflow:hidden;}
+.med-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;
+    background:var(--ca,var(--blue));border-radius:4px 0 0 4px;}
+.med-card:hover{box-shadow:0 4px 16px rgba(29,78,216,.09);}
+.med-name{font-family:'Outfit',sans-serif;font-weight:700;font-size:1.02rem;color:var(--dark);}
+.med-dose{font-size:.83rem;color:var(--blue);font-weight:600;margin-top:2px;}
+.med-meta{font-size:.8rem;color:var(--muted);margin-top:.4rem;}
+.t-pill{background:#eff6ff;color:#1e40af;border-radius:50px;padding:2px 9px;font-size:.76rem;
+    font-weight:600;font-family:'Outfit',sans-serif;display:inline-flex;align-items:center;gap:3px;}
+.btn-del{position:absolute;top:.9rem;right:.9rem;background:#fef2f2;border:none;color:#ef4444;
+    border-radius:7px;padding:4px 7px;cursor:pointer;font-size:.88rem;transition:all .2s;}
+.btn-del:hover{background:#fee2e2;}
+.stat-card{background:#fff;border-radius:15px;padding:1.4rem;border:1px solid var(--border);text-align:center;}
+.stat-num{font-family:'Outfit',sans-serif;font-weight:800;font-size:1.9rem;color:var(--blue);}
+.stat-lbl{font-size:.8rem;color:var(--muted);margin-top:2px;}
+/* Reminder overlay */
+.rem-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;display:none;align-items:center;justify-content:center;}
+.rem-box{background:#fff;border-radius:22px;padding:2.5rem;max-width:380px;width:90%;text-align:center;
+    animation:popIn .4s cubic-bezier(.34,1.56,.64,1);box-shadow:0 20px 60px rgba(0,0,0,.2);}
+@keyframes popIn{from{transform:scale(.5);opacity:0;}to{transform:scale(1);opacity:1;}}
+.rem-icon{font-size:3.8rem;margin-bottom:.9rem;animation:bounce 1s infinite;}
+@keyframes bounce{0%,100%{transform:translateY(0);}50%{transform:translateY(-11px);}}
+@media(max-width:900px){.med-layout{grid-template-columns:1fr;}.med-panel{border-right:none;border-bottom:1px solid var(--border);}}
+</style>
+{% endblock %}
+{% block content %}
+<div class="rem-overlay" id="remOverlay">
+    <div class="rem-box">
+        <div class="rem-icon">💊</div>
+        <h2 style="font-family:'Outfit',sans-serif;font-weight:800;color:var(--dark);margin-bottom:.4rem;">Time for your medicine!</h2>
+        <p id="remName" style="font-size:1.1rem;color:var(--blue);font-weight:600;margin-bottom:.2rem;"></p>
+        <p id="remDose" style="color:var(--muted);font-size:.88rem;margin-bottom:1.4rem;"></p>
+        <button onclick="closeRem()" class="btn-blue w-100" style="padding:.85rem;">
+            <i class="bi bi-check-circle-fill me-2"></i>I've taken it ✓
+        </button>
+        <button onclick="snoozeRem()" class="btn-outline-blue w-100 mt-2" style="padding:.8rem;">
+            <i class="bi bi-clock me-2"></i>Snooze 1 min
+        </button>
+    </div>
+</div>
+
+<div class="med-layout">
+    <aside class="med-panel">
+        <div class="panel-title"><i class="bi bi-plus-circle-fill text-blue me-2"></i>Add Medication</div>
+        <form id="addForm" onsubmit="addMed(event)">
+            <div class="form-g"><label class="flabel">Medicine Name *</label><input type="text" class="finput" id="mName" placeholder="e.g., Metformin, Amlodipine" required></div>
+            <div class="form-g"><label class="flabel">Dosage *</label><input type="text" class="finput" id="mDose" placeholder="e.g., 500mg, 1 tablet" required></div>
+            <div class="form-g"><label class="flabel">Frequency</label>
+                <select class="finput" id="mFreq"><option value="once">Once a day</option><option value="twice">Twice a day</option><option value="thrice">Three times a day</option><option value="four">Four times a day</option></select>
+            </div>
+            <div class="form-g"><label class="flabel">Take</label>
+                <select class="finput" id="mMeal"><option value="after">After meal</option><option value="before">Before meal</option><option value="with">With meal</option><option value="anytime">Anytime</option></select>
+            </div>
+            <div class="form-g">
+                <label class="flabel">Reminder Times *</label>
+                <div id="timesContainer" class="times-grid"></div>
+                <button type="button" class="btn-add-t" onclick="addTimeField()"><i class="bi bi-plus-circle"></i>Add Time</button>
+            </div>
+            <div class="form-g"><label class="flabel">Notes (optional)</label><textarea class="finput" id="mNotes" rows="2" placeholder="e.g., Take with a full glass of water"></textarea></div>
+            <button type="submit" class="btn-blue w-100 mt-1" id="subBtn"><i class="bi bi-plus-circle-fill me-2"></i>Add Medicine</button>
+        </form>
+        <hr class="my-4">
+        <div id="notifSection">
+            <div style="background:#fef3c7;border-radius:11px;padding:.9rem;border:1px solid #fde68a;" id="notifBox">
+                <i class="bi bi-bell-fill" style="color:#f59e0b;"></i>
+                <strong style="font-size:.83rem;"> Enable notifications for reminders</strong>
+                <p style="font-size:.78rem;color:#92400e;margin:.35rem 0 .65rem;">Get browser alerts when it's time to take your medicine.</p>
+                <button onclick="reqNotif()" class="btn-blue" style="padding:.42rem .9rem;font-size:.83rem;">Enable Notifications</button>
+            </div>
+        </div>
+    </aside>
+    <main class="med-main">
+        <div class="row g-3 mb-4">
+            <div class="col-4"><div class="stat-card"><div class="stat-num" id="statTotal">{{ medicines|length }}</div><div class="stat-lbl">Active Medicines</div></div></div>
+            <div class="col-4"><div class="stat-card"><div class="stat-num" id="statToday">—</div><div class="stat-lbl">Today's Doses</div></div></div>
+            <div class="col-4"><div class="stat-card"><div class="stat-num" id="statNext">—</div><div class="stat-lbl">Next Reminder</div></div></div>
+        </div>
+        <div class="panel-title"><i class="bi bi-capsule-pill me-2"></i>Your Medications</div>
+        <div id="medList">
+            {% if not medicines %}
+            <div id="emptyState" style="text-align:center;padding:4rem 2rem;color:#94a3b8;">
+                <div style="font-size:4rem;margin-bottom:1rem;">💊</div>
+                <h3 style="font-family:'Outfit',sans-serif;color:#cbd5e1;">No medicines added yet</h3>
+                <p>Add your first medication using the form on the left.</p>
+            </div>
+            {% endif %}
+            {% for m in medicines %}
+            <div class="med-card" id="med-{{ m.id }}">
+                <button class="btn-del" onclick="delMed({{ m.id }})"><i class="bi bi-trash"></i></button>
+                <div class="med-name">{{ m.name }}</div>
+                <div class="med-dose">{{ m.dosage }}</div>
+                <div class="med-meta"><i class="bi bi-clock me-1"></i>{{ m.get_frequency_display }} &nbsp;·&nbsp; <i class="bi bi-egg-fried me-1"></i>{{ m.get_meal_timing_display }}</div>
+                {% if m.notes %}<div class="med-meta mt-1"><i class="bi bi-sticky me-1"></i>{{ m.notes }}</div>{% endif %}
+                <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:.65rem;">
+                    {% for rt in m.reminder_times.all %}<span class="t-pill"><i class="bi bi-alarm-fill"></i>{{ rt.time|time:"H:i" }}</span>{% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </main>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+const ADD_URL="{% url 'medicine:add_medicine' %}";
+const CSRF="{{ csrf_token }}";
+const COLORS=['#1d4ed8','#0d9488','#f59e0b','#ec4899','#3b82f6','#10b981'];
+let ci={{ medicines|length }};
+const activeRems={};
+addTimeField();
+
+function addTimeField(){
+    const c=document.getElementById('timesContainer');
+    const d=document.createElement('div');d.className='t-input';
+    d.innerHTML=`<input type="time" class="finput time-field" required><button type="button" onclick="this.parentElement.remove()" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:1rem;flex-shrink:0;">×</button>`;
+    c.appendChild(d);
+}
+
+async function addMed(e){
+    e.preventDefault();
+    const times=[...document.querySelectorAll('.time-field')].map(t=>t.value).filter(Boolean);
+    if(!times.length){showToast('Please add at least one reminder time','warning');return;}
+    const btn=document.getElementById('subBtn');
+    btn.disabled=true;btn.innerHTML='<i class="bi bi-hourglass-split me-2"></i>Adding...';
+    const payload={name:document.getElementById('mName').value,dosage:document.getElementById('mDose').value,
+        frequency:document.getElementById('mFreq').value,meal_timing:document.getElementById('mMeal').value,
+        notes:document.getElementById('mNotes').value,times};
+    try{
+        const r=await fetch(ADD_URL,{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},body:JSON.stringify(payload)});
+        const data=await r.json();
+        if(data.success){
+            renderCard(data.medicine);
+            document.getElementById('addForm').reset();
+            document.getElementById('timesContainer').innerHTML='';addTimeField();
+            document.getElementById('emptyState')?.remove();
+            updateStats();showToast(`${data.medicine.name} added! ✅`,'success');
+            scheduleRems(data.medicine);
+        }else showToast(data.error||'Failed','error');
+    }catch(e){showToast('Network error','error');}
+    btn.disabled=false;btn.innerHTML='<i class="bi bi-plus-circle-fill me-2"></i>Add Medicine';
+}
+
+function renderCard(m){
+    const col=COLORS[ci++%COLORS.length];
+    const pills=m.times.map(t=>`<span class="t-pill"><i class="bi bi-alarm-fill"></i>${t.slice(0,5)}</span>`).join('');
+    const card=document.createElement('div');card.className='med-card';card.id=`med-${m.id}`;
+    card.style.setProperty('--ca',col);
+    card.innerHTML=`<button class="btn-del" onclick="delMed(${m.id})"><i class="bi bi-trash"></i></button>
+        <div class="med-name">${m.name}</div><div class="med-dose">${m.dosage}</div>
+        <div class="med-meta"><i class="bi bi-clock me-1"></i>${m.frequency} &nbsp;·&nbsp; <i class="bi bi-egg-fried me-1"></i>${m.meal_timing}</div>
+        ${m.notes?`<div class="med-meta mt-1"><i class="bi bi-sticky me-1"></i>${m.notes}</div>`:''}
+        <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:.65rem;">${pills}</div>`;
+    document.getElementById('medList').appendChild(card);
+    document.getElementById('statTotal').textContent=document.querySelectorAll('.med-card').length;
+}
+
+async function delMed(id){
+    if(!confirm('Remove this medicine?'))return;
+    const r=await fetch(`/medicine/delete/${id}/`,{method:'DELETE',headers:{'X-CSRFToken':CSRF}});
+    const d=await r.json();
+    if(d.success){document.getElementById(`med-${id}`)?.remove();updateStats();showToast('Medicine removed','info');}
+}
+
+function scheduleRems(med){
+    med.times.forEach(ts=>{
+        const key=`${med.id}_${ts}`;
+        if(activeRems[key])return;
+        const fn=()=>{const n=new Date();const[h,m]=ts.split(':').map(Number);if(n.getHours()===h&&n.getMinutes()===m)triggerRem(med.name,med.dosage);};
+        activeRems[key]=setInterval(fn,30000);fn();
+    });
+}
+
+function triggerRem(name,dose){
+    document.getElementById('remName').textContent=name;
+    document.getElementById('remDose').textContent=`Dosage: ${dose}`;
+    document.getElementById('remOverlay').style.display='flex';
+    if(Notification.permission==='granted')new Notification('💊 Medicine Reminder',{body:`Time to take ${name} — ${dose}`,requireInteraction:true});
+}
+function closeRem(){document.getElementById('remOverlay').style.display='none';}
+function snoozeRem(){
+    closeRem();
+    const name=document.getElementById('remName').textContent;
+    const dose=document.getElementById('remDose').textContent.replace('Dosage: ','');
+    setTimeout(()=>triggerRem(name,dose),600000);showToast('Snoozed 10 minutes ⏰','info');
+}
+function reqNotif(){
+    Notification.requestPermission().then(p=>{
+        if(p==='granted'){
+            document.getElementById('notifBox').innerHTML=`<i class="bi bi-bell-fill" style="color:#10b981;"></i> <strong style="color:#065f46;font-size:.83rem;">Notifications enabled ✅</strong>`;
+            document.getElementById('notifBox').style.background='#d1fae5';document.getElementById('notifBox').style.borderColor='#6ee7b7';
+        }
+    });
+}
+function updateStats(){
+    document.getElementById('statTotal').textContent=document.querySelectorAll('.med-card').length;
+    const pills=[...document.querySelectorAll('.t-pill')];
+    document.getElementById('statToday').textContent=pills.length;
+    const now=new Date();let nearest=null;
+    pills.forEach(p=>{const[h,m]=p.textContent.trim().split(':').map(Number);const t=new Date();t.setHours(h,m,0,0);if(t>now&&(!nearest||t<nearest))nearest=t;});
+    document.getElementById('statNext').textContent=nearest?nearest.toLocaleTimeString('en-MY',{hour:'2-digit',minute:'2-digit'}):'—';
+}
+
+// Init existing medicines
+{% for m in medicines %}
+scheduleRems({id:{{ m.id }},name:"{{ m.name }}",dosage:"{{ m.dosage }}",
+    times:[{% for rt in m.reminder_times.all %}"{{ rt.time|time:'H:i' }}"{% if not forloop.last %},{% endif %}{% endfor %}]});
+{% endfor %}
+updateStats();setInterval(updateStats,60000);
+if(Notification.permission==='granted'){document.getElementById('notifBox').innerHTML=`<i class="bi bi-bell-fill" style="color:#10b981;"></i> <strong style="color:#065f46;font-size:.83rem;">Notifications enabled ✅</strong>`;document.getElementById('notifBox').style.background='#d1fae5';}
+</script>
+{% endblock %}

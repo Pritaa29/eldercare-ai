@@ -1,0 +1,169 @@
+{% extends 'base.html' %}
+{% block title %}Exercise Monitor — ElderCare AI{% endblock %}
+{% block nav_ex %}active{% endblock %}
+{% block extra_css %}
+<style>
+.ex-layout{display:grid;grid-template-columns:1fr 360px;gap:0;min-height:calc(100vh - 70px);}
+.ex-main{background:#0f172a;padding:2rem;display:flex;flex-direction:column;gap:1.4rem;}
+.ex-panel{background:#f0f7ff;padding:2rem;overflow-y:auto;}
+.cam-wrap{position:relative;background:#060d1e;border-radius:18px;overflow:hidden;aspect-ratio:4/3;}
+#webcam,#annotated{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
+#annotated{z-index:2;display:none;}
+.cam-overlay{position:absolute;inset:0;z-index:3;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:1rem;background:rgba(15,23,42,.7);}
+.score-ring{position:absolute;top:1rem;left:1rem;z-index:4;width:76px;height:76px;background:rgba(0,0,0,.6);border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;backdrop-filter:blur(8px);border:3px solid var(--blue);display:none;}
+.score-num{font-family:'Outfit',sans-serif;font-weight:800;font-size:1.3rem;color:#fff;line-height:1;}
+.score-lbl{font-size:.58rem;color:#93c5fd;text-transform:uppercase;}
+.ex-btn{background:rgba(255,255,255,.1);border:2px solid rgba(255,255,255,.15);border-radius:11px;padding:7px 14px;font-family:'Outfit',sans-serif;font-weight:600;font-size:.83rem;color:#93c5fd;cursor:pointer;transition:all .2s;}
+.ex-btn:hover,.ex-btn.active{background:var(--blue);border-color:var(--blue);color:#fff;}
+.fb-card{background:#fff;border-radius:13px;padding:.9rem 1.1rem;border-left:4px solid;margin-bottom:.55rem;font-size:.86rem;}
+.fb-card.success{border-color:#10b981;background:#f0fdf4;color:#065f46;}
+.fb-card.warning{border-color:#f59e0b;background:#fffbeb;color:#92400e;}
+.fb-card.info{border-color:var(--blue);background:#eff6ff;color:#1e40af;}
+.angle-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #dbeafe;font-size:.83rem;}
+.angle-row:last-child{border-bottom:none;}
+.angle-val{font-family:'Outfit',sans-serif;font-weight:700;color:var(--blue);}
+.ctrl-btn{flex:1;padding:.7rem;border:none;border-radius:11px;font-family:'Outfit',sans-serif;font-weight:700;font-size:.88rem;cursor:pointer;transition:all .2s;}
+.ctrl-start{background:var(--blue);color:#fff;}.ctrl-start:hover{background:var(--blue-dark);}
+.ctrl-stop{background:#ef4444;color:#fff;}.ctrl-stop:hover{background:#dc2626;}
+.ai-box{background:linear-gradient(135deg,#0f172a,#1e3a8a);border-radius:15px;padding:1.2rem;color:#e0e7ff;font-size:.86rem;line-height:1.7;border:1px solid rgba(29,78,216,.3);display:none;}
+@media(max-width:992px){.ex-layout{grid-template-columns:1fr;}}
+</style>
+{% endblock %}
+{% block content %}
+<div class="ex-layout">
+    <div class="ex-main">
+        <div>
+            <h1 style="font-family:'Outfit',sans-serif;font-weight:800;color:#fff;font-size:1.35rem;margin-bottom:.2rem;"><i class="bi bi-camera-video me-2" style="color:var(--blue-accent);"></i>Exercise Monitor</h1>
+            <p style="color:#94a3b8;font-size:.86rem;">Real-time posture analysis powered by MediaPipe + Gemini AI</p>
+        </div>
+        <div>
+            <p style="color:#93c5fd;font-size:.78rem;font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:.65rem;">Exercise Type</p>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <button class="ex-btn active" onclick="setEx('general',this)">🧘 General</button>
+                <button class="ex-btn" onclick="setEx('squat',this)">🏋️ Squat</button>
+                <button class="ex-btn" onclick="setEx('arm_raise',this)">💪 Arm Raise</button>
+                <button class="ex-btn" onclick="setEx('standing',this)">🧍 Standing</button>
+            </div>
+        </div>
+        <div class="cam-wrap" id="camWrap">
+            <video id="webcam" autoplay muted playsinline></video>
+            <img id="annotated">
+            <div class="score-ring" id="scoreRing"><div class="score-num" id="scoreNum">—</div><div class="score-lbl">Score</div></div>
+            <div class="cam-overlay" id="camOverlay">
+                <div style="font-size:3.5rem;">📷</div>
+                <div style="font-family:'Outfit',sans-serif;font-weight:700;color:#fff;font-size:1.05rem;">Camera not started</div>
+                <p style="color:#93c5fd;font-size:.83rem;text-align:center;max-width:260px;">Click Start Camera to begin real-time posture analysis</p>
+            </div>
+        </div>
+        <div style="display:flex;gap:9px;">
+            <button class="ctrl-btn ctrl-start" id="startBtn" onclick="startCam()"><i class="bi bi-camera-video-fill me-2"></i>Start Camera</button>
+            <button class="ctrl-btn ctrl-stop" id="stopBtn" onclick="stopCam()" style="display:none;"><i class="bi bi-stop-fill me-2"></i>Stop</button>
+            <button class="ctrl-btn" style="background:#0d9488;color:#fff;" onclick="getAdvice()"><i class="bi bi-stars me-2"></i>AI Advice</button>
+        </div>
+        <div class="ai-box" id="aiBox">
+            <div style="font-family:'Outfit',sans-serif;font-weight:700;color:#93c5fd;margin-bottom:.4rem;font-size:.78rem;text-transform:uppercase;letter-spacing:1px;"><i class="bi bi-stars me-1"></i>AI Physiotherapist</div>
+            <div id="aiText"></div>
+        </div>
+    </div>
+    <aside class="ex-panel">
+        <h2 style="font-family:'Outfit',sans-serif;font-weight:800;font-size:1.05rem;color:var(--dark);margin-bottom:1.4rem;"><i class="bi bi-activity text-blue me-2"></i>Live Analysis</h2>
+        <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:11px;padding:.9rem;margin-bottom:1.4rem;" id="statusCard">
+            <div style="font-size:.78rem;color:#065f46;font-family:'Outfit',sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:.2rem;">Status</div>
+            <div style="color:var(--dark);font-weight:600;" id="statusText">Camera not started</div>
+        </div>
+        <div style="margin-bottom:1.4rem;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:.4rem;">
+                <span style="font-family:'Outfit',sans-serif;font-weight:700;font-size:.83rem;color:#374151;">Posture Score</span>
+                <span style="font-family:'Outfit',sans-serif;font-weight:700;color:var(--blue);" id="scoreLbl">—</span>
+            </div>
+            <div style="background:#e2e8f0;border-radius:50px;height:9px;overflow:hidden;">
+                <div id="scoreBar" style="height:100%;background:linear-gradient(90deg,var(--blue),var(--blue-light));border-radius:50px;width:0%;transition:width .5s;"></div>
+            </div>
+        </div>
+        <div style="margin-bottom:1.4rem;">
+            <div style="font-family:'Outfit',sans-serif;font-weight:700;font-size:.83rem;color:#374151;margin-bottom:.65rem;">Live Feedback</div>
+            <div id="feedbackList"><div style="text-align:center;padding:2rem;color:#94a3b8;font-size:.83rem;"><i class="bi bi-camera-video" style="font-size:1.8rem;display:block;margin-bottom:.4rem;"></i>Waiting for camera…</div></div>
+        </div>
+        <div>
+            <div style="font-family:'Outfit',sans-serif;font-weight:700;font-size:.83rem;color:#374151;margin-bottom:.65rem;">Joint Angles</div>
+            <div id="angleList" style="background:#fff;border-radius:11px;padding:.65rem .9rem;border:1px solid var(--border);"><div style="text-align:center;color:#94a3b8;font-size:.8rem;padding:.8rem 0;">No data yet</div></div>
+        </div>
+        <div style="background:#fef3c7;border-radius:11px;padding:.9rem;margin-top:1.4rem;border:1px solid #fde68a;">
+            <div style="font-family:'Outfit',sans-serif;font-weight:700;font-size:.78rem;color:#92400e;margin-bottom:.4rem;">⚠️ Safety Tips for Elderly</div>
+            <ul style="color:#92400e;font-size:.78rem;padding-left:1.1rem;margin:0;">
+                <li>Exercise near a wall or chair for support</li>
+                <li>Stop if you feel pain, dizziness or breathlessness</li>
+                <li>Start slowly and rest between sets</li>
+                <li>Stay hydrated throughout</li>
+            </ul>
+        </div>
+    </aside>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+const ANA_URL="{% url 'exercise:analyze_frame' %}";
+const ADV_URL="{% url 'exercise:get_ai_advice' %}";
+const CSRF="{{ csrf_token }}";
+let stream=null,interval=null,curEx='general',lastAna={};
+
+async function startCam(){
+    try{
+        stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:640,height:480},audio:false});
+        document.getElementById('webcam').srcObject=stream;
+        document.getElementById('camOverlay').style.display='none';
+        document.getElementById('startBtn').style.display='none';
+        document.getElementById('stopBtn').style.display='block';
+        document.getElementById('scoreRing').style.display='flex';
+        document.getElementById('statusText').textContent='Analysing posture…';
+        interval=setInterval(captureAnalyse,500);
+    }catch(e){showToast('Camera access denied. Please allow camera permissions.','error');}
+}
+function stopCam(){
+    if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;}
+    clearInterval(interval);
+    document.getElementById('webcam').srcObject=null;
+    document.getElementById('annotated').style.display='none';
+    document.getElementById('camOverlay').style.display='flex';
+    document.getElementById('startBtn').style.display='block';
+    document.getElementById('stopBtn').style.display='none';
+    document.getElementById('scoreRing').style.display='none';
+    document.getElementById('statusText').textContent='Camera stopped';
+}
+function setEx(t,btn){curEx=t;document.querySelectorAll('.ex-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');}
+async function captureAnalyse(){
+    const v=document.getElementById('webcam');if(!v.videoWidth)return;
+    const c=document.createElement('canvas');c.width=v.videoWidth;c.height=v.videoHeight;
+    c.getContext('2d').drawImage(v,0,0);
+    try{
+        const r=await fetch(ANA_URL,{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},body:JSON.stringify({frame:c.toDataURL('image/jpeg',.7),exercise_type:curEx})});
+        const d=await r.json();
+        if(d.success){lastAna=d;updateUI(d);if(d.annotated_frame){const af=document.getElementById('annotated');af.src=d.annotated_frame;af.style.display='block';}}
+    }catch(e){}
+}
+function updateUI(d){
+    const s=d.posture_score||0;
+    document.getElementById('scoreNum').textContent=s;
+    document.getElementById('scoreLbl').textContent=`${s}/100`;
+    document.getElementById('scoreBar').style.width=`${s}%`;
+    document.getElementById('scoreBar').style.background=s>=80?'linear-gradient(90deg,#10b981,#34d399)':s>=60?'linear-gradient(90deg,#f59e0b,#fbbf24)':'linear-gradient(90deg,#ef4444,#f87171)';
+    document.getElementById('statusText').textContent=d.pose_detected?`Pose detected — ${curEx}`:'No person detected';
+    const fl=document.getElementById('feedbackList');
+    if(d.feedback?.length)fl.innerHTML=d.feedback.map(f=>`<div class="fb-card ${f.type}">${f.text}</div>`).join('');
+    const al=document.getElementById('angleList');
+    if(d.angles&&Object.keys(d.angles).length){
+        const lbs={left_elbow:'Left Elbow',right_elbow:'Right Elbow',left_knee:'Left Knee',right_knee:'Right Knee',left_hip:'Left Hip',right_hip:'Right Hip'};
+        al.innerHTML=Object.entries(d.angles).map(([k,v])=>`<div class="angle-row"><span style="color:var(--muted);">${lbs[k]||k}</span><span class="angle-val">${v}°</span></div>`).join('');
+    }
+}
+async function getAdvice(){
+    if(!lastAna.posture_score){showToast('Start the camera first','warning');return;}
+    const box=document.getElementById('aiBox');const txt=document.getElementById('aiText');
+    box.style.display='block';txt.textContent='Getting personalised advice…';
+    try{
+        const r=await fetch(ADV_URL,{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},body:JSON.stringify({exercise_type:curEx,posture_score:lastAna.posture_score,warnings:lastAna.warnings||[],angles:lastAna.angles||{}})});
+        const d=await r.json();txt.textContent=d.advice||'Could not get advice.';
+    }catch(e){txt.textContent='Network error.';}
+}
+</script>
+{% endblock %}

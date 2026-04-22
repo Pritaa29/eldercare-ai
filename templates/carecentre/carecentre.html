@@ -1,0 +1,263 @@
+{% extends 'base.html' %}
+{% block title %}Care Centre — ElderCare AI{% endblock %}
+{% block nav_cc %}active{% endblock %}
+{% block extra_css %}
+<style>
+.cc-layout{display:grid;grid-template-columns:360px 1fr;gap:0;height:calc(100vh - 70px);}
+.cc-panel{background:#f0f7ff;border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
+.cc-map-area{flex:1;background:#e2e8f0;position:relative;}
+#map{width:100%;height:100%;}
+.panel-head{padding:1.4rem;background:#fff;border-bottom:1px solid var(--border);}
+.panel-head h2{font-family:'Outfit',sans-serif;font-weight:800;font-size:1.05rem;color:var(--dark);margin:0;}
+.filter-row{display:flex;gap:7px;flex-wrap:wrap;margin-top:.9rem;}
+.f-btn{background:#fff;border:2px solid var(--border);border-radius:50px;padding:5px 13px;
+    font-family:'Outfit',sans-serif;font-weight:600;font-size:.78rem;color:var(--muted);cursor:pointer;transition:all .2s;}
+.f-btn:hover,.f-btn.active{border-color:var(--blue);color:var(--blue);background:#eff6ff;}
+.places-list{flex:1;overflow-y:auto;padding:.9rem;}
+.place-card{background:#fff;border-radius:13px;border:1px solid var(--border);padding:.9rem 1.1rem;
+    margin-bottom:.65rem;cursor:pointer;transition:all .2s;position:relative;}
+.place-card:hover{border-color:var(--blue);box-shadow:0 4px 16px rgba(29,78,216,.09);transform:translateX(3px);}
+.place-card.selected{border-color:var(--blue);border-width:2px;background:#eff6ff;}
+.place-name{font-family:'Outfit',sans-serif;font-weight:700;font-size:.92rem;color:var(--dark);}
+.place-addr{font-size:.78rem;color:var(--muted);margin-top:2px;}
+.place-meta{display:flex;align-items:center;gap:9px;margin-top:.4rem;font-size:.76rem;}
+.stars{color:#f59e0b;font-size:.78rem;}
+.open-badge{padding:2px 7px;border-radius:50px;font-size:.7rem;font-weight:700;font-family:'Outfit',sans-serif;}
+.open-badge.open{background:#d1fae5;color:#065f46;}.open-badge.closed{background:#fee2e2;color:#991b1b;}
+.dir-btn{position:absolute;top:.9rem;right:.9rem;background:#eff6ff;border:none;color:var(--blue);
+    border-radius:7px;padding:4px 9px;font-size:.76rem;font-family:'Outfit',sans-serif;font-weight:600;
+    cursor:pointer;text-decoration:none;transition:all .2s;}
+.dir-btn:hover{background:var(--blue);color:#fff;}
+.loc-btn{width:100%;padding:.7rem;background:var(--blue);color:#fff;border:none;border-radius:11px;
+    font-family:'Outfit',sans-serif;font-weight:700;font-size:.92rem;cursor:pointer;transition:all .2s;
+    display:flex;align-items:center;justify-content:center;gap:7px;margin-top:.9rem;}
+.loc-btn:hover{background:var(--blue-dark);}
+.map-placeholder{display:flex;align-items:center;justify-content:center;flex-direction:column;
+    height:100%;gap:1rem;background:#f8faff;color:var(--muted);text-align:center;padding:2rem;}
+.map-placeholder i{font-size:4rem;color:#93c5fd;}
+.map-placeholder h3{font-family:'Outfit',sans-serif;color:#cbd5e1;font-size:1.1rem;}
+.map-placeholder p{font-size:.85rem;max-width:380px;line-height:1.6;}
+.map-placeholder code{background:#e2e8f0;padding:2px 6px;border-radius:4px;font-size:.8rem;}
+.api-steps{background:#eff6ff;border-radius:12px;padding:1rem 1.25rem;text-align:left;max-width:420px;margin-top:.5rem;}
+.api-steps h4{font-family:'Outfit',sans-serif;font-weight:700;font-size:.85rem;color:var(--blue);margin-bottom:.5rem;}
+.api-steps ol{font-size:.82rem;color:#374151;padding-left:1.2rem;margin:0;line-height:1.8;}
+.api-steps a{color:var(--blue);}
+@media(max-width:900px){.cc-layout{grid-template-columns:1fr;height:auto;}.cc-map-area{height:380px;}}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="cc-layout">
+    <div class="cc-panel">
+        <div class="panel-head">
+            <h2><i class="bi bi-hospital me-2"></i>Nearby Care Centres</h2>
+            <p style="font-size:.8rem;color:var(--muted);margin:.2rem 0 0;">Hospitals, clinics & pharmacies near you</p>
+            <div class="filter-row">
+                <button class="f-btn active" onclick="search('hospital',this)">🏥 Hospital</button>
+                <button class="f-btn" onclick="search('clinic',this)">🏪 Clinic</button>
+                <button class="f-btn" onclick="search('pharmacy',this)">💊 Pharmacy</button>
+            </div>
+            <button class="loc-btn" id="locBtn" onclick="getLocation()">
+                <i class="bi bi-geo-alt-fill"></i>Use My Location
+            </button>
+        </div>
+        <div class="places-list" id="placesList">
+            <div style="text-align:center;padding:3rem 1rem;color:#94a3b8;">
+                <div style="font-size:2.8rem;margin-bottom:.65rem;">📍</div>
+                <p style="font-family:'Outfit',sans-serif;font-weight:600;color:#cbd5e1;">Click "Use My Location"<br>to find care centres</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAP AREA -->
+    <div class="cc-map-area">
+        {% if google_maps_key %}
+            <div id="map"></div>
+        {% else %}
+            <!-- No API key — show helpful setup guide -->
+            <div class="map-placeholder">
+                <i class="bi bi-map"></i>
+                <h3>Google Maps API Key Required</h3>
+                <p>Your <code>GOOGLE_MAPS_API_KEY</code> is not set in the <code>.env</code> file.</p>
+                <div class="api-steps">
+                    <h4>🔑 How to get a FREE Google Maps key:</h4>
+                    <ol>
+                        <li>Go to <a href="https://console.cloud.google.com/" target="_blank">console.cloud.google.com</a></li>
+                        <li>Create a project (or select existing)</li>
+                        <li>Go to <strong>APIs &amp; Services → Library</strong></li>
+                        <li>Search and Enable:
+                            <ul style="margin-top:4px;">
+                                <li><strong>Maps JavaScript API</strong></li>
+                                <li><strong>Places API</strong></li>
+                                <li><strong>Geocoding API</strong></li>
+                            </ul>
+                        </li>
+                        <li>Go to <strong>APIs &amp; Services → Credentials</strong></li>
+                        <li>Click <strong>Create Credentials → API Key</strong></li>
+                        <li>Copy the key into your <code>.env</code> file:<br>
+                            <code>GOOGLE_MAPS_API_KEY=your_key_here</code>
+                        </li>
+                        <li>Restart the server</li>
+                    </ol>
+                </div>
+                <p style="margin-top:1rem;font-size:.8rem;">
+                    ⚠️ <strong>Important:</strong> When prompted about restrictions, choose <strong>"None"</strong>
+                    for testing, or add <code>http://localhost:8000/*</code> as an allowed HTTP referrer.
+                </p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if google_maps_key %}
+<script>
+const SEARCH_URL = "{% url 'carecentre:search_nearby' %}";
+const CSRF = "{{ csrf_token }}";
+let map = null, markers = [], userLat = null, userLng = null, curType = 'hospital';
+
+// ── Load Google Maps with error handling ──
+function loadMaps() {
+    const script = document.createElement('script');
+    script.src = `https://maps.googleapis.com/maps/api/js?key={{ google_maps_key }}&callback=initMap&libraries=places&loading=async`;
+    script.async = true;
+    script.onerror = function() {
+        document.getElementById('map').innerHTML = `
+            <div style="height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;padding:2rem;text-align:center;background:#fef2f2;">
+                <i class="bi bi-exclamation-triangle" style="font-size:3rem;color:#ef4444;margin-bottom:1rem;"></i>
+                <h3 style="font-family:'Outfit',sans-serif;color:#991b1b;">Maps failed to load</h3>
+                <p style="color:#374151;font-size:.85rem;max-width:380px;">
+                    Your API key may need the <strong>Maps JavaScript API</strong> enabled, or
+                    HTTP referrer restrictions may be blocking localhost.<br><br>
+                    Fix: Go to Google Cloud Console → API Key → Application Restrictions → <strong>None</strong>
+                </p>
+            </div>`;
+    };
+    document.head.appendChild(script);
+}
+
+window.initMap = function() {
+    map = new google.maps.Map(document.getElementById('map'), {
+        zoom: 14,
+        center: { lat: 3.1390, lng: 101.6869 },
+        mapTypeControl: false,
+        fullscreenControl: true,
+        streetViewControl: false,
+    });
+};
+
+function getLocation() {
+    if (!navigator.geolocation) {
+        showToast('Geolocation not supported by your browser', 'error'); return;
+    }
+    const btn = document.getElementById('locBtn');
+    btn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Getting location…';
+    btn.disabled = true;
+
+    navigator.geolocation.getCurrentPosition(
+        pos => {
+            userLat = pos.coords.latitude;
+            userLng = pos.coords.longitude;
+            btn.innerHTML = '<i class="bi bi-geo-alt-fill me-2"></i>Location Found ✓';
+            btn.style.background = '#10b981';
+            btn.disabled = false;
+
+            if (map) {
+                map.setCenter({ lat: userLat, lng: userLng });
+                map.setZoom(14);
+                new google.maps.Marker({
+                    position: { lat: userLat, lng: userLng },
+                    map,
+                    title: 'Your Location',
+                    icon: {
+                        path: google.maps.SymbolPath.CIRCLE,
+                        scale: 12,
+                        fillColor: '#1d4ed8', fillOpacity: 1,
+                        strokeColor: '#fff', strokeWeight: 3
+                    }
+                });
+            }
+            search(curType);
+        },
+        err => {
+            showToast('Could not get location. Please allow location access in your browser.', 'error');
+            btn.innerHTML = '<i class="bi bi-geo-alt-fill me-2"></i>Use My Location';
+            btn.disabled = false;
+        },
+        { timeout: 10000, enableHighAccuracy: true }
+    );
+}
+
+async function search(type, btn) {
+    if (btn) {
+        document.querySelectorAll('.f-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+    }
+    curType = type;
+    if (!userLat || !userLng) { showToast('Click "Use My Location" first', 'warning'); return; }
+
+    document.getElementById('placesList').innerHTML = `
+        <div style="text-align:center;padding:2rem;color:var(--blue);">
+            <div style="font-size:1.8rem;margin-bottom:.6rem;">⏳</div>
+            <p style="font-family:'Outfit',sans-serif;font-weight:600;">Searching nearby…</p>
+        </div>`;
+
+    try {
+        const r = await fetch(SEARCH_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+            body: JSON.stringify({ lat: userLat, lng: userLng, type, radius: 5000 })
+        });
+        const d = await r.json();
+        if (d.success) { renderPlaces(d.results); if (map) plotMarkers(d.results); }
+        else showToast(d.error || 'Search failed', 'error');
+    } catch (e) { showToast('Network error. Please try again.', 'error'); }
+}
+
+function renderPlaces(places) {
+    if (!places.length) {
+        document.getElementById('placesList').innerHTML = `<div style="text-align:center;padding:2rem;color:#94a3b8;"><p>No results found. Try a different filter.</p></div>`;
+        return;
+    }
+    document.getElementById('placesList').innerHTML = places.map((p, i) => {
+        const stars = p.rating ? `<span class="stars">${'★'.repeat(Math.round(p.rating))}</span><span style="color:#94a3b8;">${p.rating}</span>` : '';
+        const open = p.open_now === true ? '<span class="open-badge open">Open</span>' :
+                     p.open_now === false ? '<span class="open-badge closed">Closed</span>' : '';
+        return `<div class="place-card" id="pc-${i}" onclick="selPlace(${i},${p.lat},${p.lng})">
+            <a href="https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lng}" target="_blank" class="dir-btn" onclick="event.stopPropagation()">
+                <i class="bi bi-signpost me-1"></i>Directions</a>
+            <div class="place-name">${p.name}</div>
+            <div class="place-addr"><i class="bi bi-geo-alt me-1"></i>${p.address || 'Address unavailable'}</div>
+            <div class="place-meta">${stars ? `<span>${stars}</span>` : ''} ${open}</div>
+        </div>`;
+    }).join('');
+}
+
+function plotMarkers(places) {
+    markers.forEach(m => m.setMap(null)); markers = [];
+    places.forEach((p, i) => {
+        const m = new google.maps.Marker({ position: { lat: p.lat, lng: p.lng }, map, title: p.name });
+        const iw = new google.maps.InfoWindow({
+            content: `<div style="font-family:'Outfit',sans-serif;max-width:200px;">
+                <strong>${p.name}</strong>
+                <p style="font-size:.76rem;color:#666;margin:3px 0;">${p.address || ''}</p>
+                ${p.rating ? `<p style="color:#f59e0b;margin:0;">★ ${p.rating}</p>` : ''}
+                <a href="https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lng}" target="_blank" style="color:var(--blue);font-size:.78rem;">Directions →</a>
+            </div>`
+        });
+        m.addListener('click', () => { iw.open(map, m); selPlace(i, p.lat, p.lng); });
+        markers.push(m);
+    });
+}
+
+function selPlace(i, lat, lng) {
+    document.querySelectorAll('.place-card').forEach(c => c.classList.remove('selected'));
+    document.getElementById(`pc-${i}`)?.classList.add('selected');
+    if (map) { map.panTo({ lat, lng }); map.setZoom(16); }
+}
+
+loadMaps();
+</script>
+{% endif %}
+{% endblock %}
