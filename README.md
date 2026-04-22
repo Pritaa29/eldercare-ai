@@ -55,4 +55,5 @@ gcloud run deploy eldercare-ai-service \
     --region us-central1 \
     --allow-unauthenticated \
     --port 8080
-🌟 Features & Grand ChallengesFeatureChallenge AddressedDr. Aida (AI Doctor)Intelligent diagnostics & medical image analysis.Medicine TrackerManagement of chronic medication for elderly patients.Exercise MonitorReal-time pose estimation for physical wellbeing.Emergency SOSReal-time Telegram/Email alerts for critical incidents.Sign LanguageEnhanced accessibility for speech-impaired seniors.📜 Rules & RegulationsThis project was built entirely during the MyAI Future Hackathon (15 March – 24 April 2026). We retain full ownership of the intellectual property while granting Project 2030 a license to showcase this work.
+
+📜 Rules & RegulationsThis project was built entirely during the MyAI Future Hackathon (15 March – 24 April 2026). We retain full ownership of the intellectual property while granting Project 2030 a license to showcase this work.
